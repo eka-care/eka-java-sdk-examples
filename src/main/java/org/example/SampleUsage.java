@@ -3,6 +3,7 @@ package org.example;
 import care.eka.EkaCareClient;
 import care.eka.utils.Constants;
 import com.fasterxml.jackson.databind.JsonNode;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,22 +21,22 @@ public class SampleUsage {
         try {
             // Initialize the client with client ID and secret
             EkaCareClient client = new EkaCareClient("EC_174022407354131", "32d471f4-f0b9-4a6e-a4ba-1f22ad1a94c9");
+            List<String> audioFiles = new ArrayList<>();
+            audioFiles.add("/Users/user/Downloads/v2rxRecording.m4a");
+            audioFiles.add("/Users/user/Downloads/full_audio.wav");
+            String txnId = "test-transaction-id-2004";
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put("mode", "dictation");
+            String action = "ekascribe";
 
             // Example 1: Authentication
-            authenticationExample(client);
+             authenticationExample(client);
 
             // Example 2: Upload files
-            fileUploadExample(client);
+             fileUploadExample(client, audioFiles, txnId, action, extraData);
 
-            // Example 3: Manage vitals
-            vitalsExample(client);
-
-            // Example 4: Work with ABDM profile
-            profileExample(client);
-
-            // Example 5: Manage health records
-            recordsExample(client);
-
+            // Example 3: Get V2RX status
+            getV2RxStatusExample(client, txnId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -63,18 +64,8 @@ public class SampleUsage {
     /**
      * File upload example.
      */
-    private static void fileUploadExample(EkaCareClient client) throws IOException {
+    private static void fileUploadExample(EkaCareClient client, List<String> audioFiles, String txnId, String action, Map<String, Object> extraData) throws IOException {
         System.out.println("=== File Upload Example ===");
-
-        // Define parameters
-        String txnId = "test-transaction-id-9";
-        Map<String, Object> extraData = new HashMap<>();
-        extraData.put("mode", "dictation");
-        String action = "ekascribe";
-
-        // List of audio files to upload
-        List<String> audioFiles = new ArrayList<>();
-        audioFiles.add("/path/to/recording.mp3");
 
         // Upload files
         List<JsonNode> responses = client.getFiles().upload(audioFiles, txnId, action, extraData);
@@ -85,6 +76,17 @@ public class SampleUsage {
             System.out.println("Content Type: " + response.get("contentType").asText());
             System.out.println("File Size: " + response.get("size").asText() + " bytes");
         }
+    }
+
+    /**
+     * V2RX status example.
+     */
+    private static void getV2RxStatusExample(EkaCareClient client, String responseId) throws IOException {
+        System.out.println("=== V2RX Fetcher Example ===");
+
+        // Fetch session status
+        JsonNode sessionStatus = client.getV2RX().fetchSessionStatus(responseId);
+        System.out.println("Session Status: " + sessionStatus.toPrettyString());
     }
 
     /**
