@@ -87,7 +87,7 @@ public class SampleUsage {
         System.out.println("=== V2RX Fetcher Example ===");
 
         // Fetch session status
-        JsonNode sessionStatus = client.getV2RX().fetchSessionStatus(responseId);
+        JsonNode sessionStatus = client.getV2RX().getSessionStatus(responseId);
         System.out.println("Session Status: " + sessionStatus.toPrettyString());
     }
 
