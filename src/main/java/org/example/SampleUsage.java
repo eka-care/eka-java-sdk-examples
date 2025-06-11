@@ -1,10 +1,5 @@
 package org.example;
 
-import care.eka.EkaCareClient;
-import care.eka.utils.Constants;
-import com.fasterxml.jackson.databind.JsonNode;
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,6 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import care.eka.EkaCareClient;
+import care.eka.utils.Constants;
+
 /**
  * Sample usage of the EkaCare Java SDK.
  */
@@ -21,38 +21,59 @@ public class SampleUsage {
     public static void main(String[] args) {
         try {
             // Initialize the client with client ID and secret
-            EkaCareClient client = new EkaCareClient("EC_173754209749052", "53c5592a-9e86-4051-9c82-37d37253d339");
+            EkaCareClient client = new EkaCareClient("<client_id>", "<client-secret>");
+            
+            // Collect all audio files in a list
             List<String> audioFiles = new ArrayList<>();
-            audioFiles.add("/Users/niharika/Downloads/1_tBA76778.wav");
-//            audioFiles.add("file_path2");
-            String txnId = "9dfd6340-8ec5-4b17-8803-5b7ac449cc6f";
+            audioFiles.add("<full file path>");
+            // audioFiles.add("file_path2");
+
+            // Set your own txn id
+            String txnId = "test-11jun25-03";
+
+            // Set the Config for running the V2RX action
+            // You can refre to : https://developer.eka.care/api-reference/general-tools/medical/voice/overview
+            // Mode : dictation | consultation
             Map<String, Object> extraData = new HashMap<>();
             extraData.put("mode", "dictation");
-            extraData.put("uhid", "txnId");
-            extraData.put("hfid", "audioFiles");
+            //Custom keys , you'll get back the exact same in result API
+            extraData.put("uhid", "unique_patient_id"); // Replace with actual patient ID
+            extraData.put("hfid", "unique_health_facility_id"); // Replace with actual health facility ID
+
+            // Define the output format for the V2RX action
+            // Templates and languages can be customized as per your requirements
             Map<String, Object> outputFormat = new HashMap<>();
-            outputFormat.put("input_language", Arrays.asList("en-IN"));
+            outputFormat.put("input_language", Arrays.asList("en-IN", "hi"));
 
-            Map<String, Object> templateMap = new HashMap<>();
-            templateMap.put("template_id", "mw_template");
-            templateMap.put("codification_needed", true);
-
-            outputFormat.put("output_template", Arrays.asList(templateMap));
-
+            // output template ids
+            Map<String, Object> templateMap1 = new HashMap<>();
+            templateMap1.put("template_id", "<your template id>");
+            templateMap1.put("language_output", "en-IN");
+            // set true if you need codified data (if out supports that)
+            templateMap1.put("codification_needed", true);
             
+            // Sample second template id
+            Map<String, Object> templateMap2 = new HashMap<>();
+            templateMap2.put("template_id", "clinical_notes_template");
+            templateMap2.put("language_output", "fr");
+            
+            // Add both templates to the output_template list
+            outputFormat.put("output_template", Arrays.asList(templateMap1, templateMap2));
+            
+            // Keep this the same
             String action = "ekascribe-v2";
 
+            // Step 1: Authentication
+            authenticationExample(client);
 
-            // Example 1: Authentication
-             authenticationExample(client);
+            // Step 2: Upload files
+            fileUploadExample(client, audioFiles, txnId, action, extraData, outputFormat);
 
-            // Example 2: Upload files
-             fileUploadExample(client, audioFiles, txnId, action, extraData, outputFormat);
+            // Below step should be done after the webhook is received
 
-             // Below step should be done after the webhook is received
+            // Step 3: Get V2RX status
+            getV2RxStatusExample(client, txnId, action);
 
-            // Example 3: Get V2RX status
-             getV2RxStatusExample(client, txnId, action);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -62,10 +83,13 @@ public class SampleUsage {
      * Authentication example.
      */
     private static void authenticationExample(EkaCareClient client) throws IOException {
+        // Extras
         System.out.println("=== Authentication Example ===");
 
         // Login to get tokens
         JsonNode tokenResponse = client.getAuth().login();
+
+        // Extras
         System.out.println("Access Token: " + tokenResponse.get("access_token").asText());
         System.out.println("Refresh Token: " + tokenResponse.get("refresh_token").asText());
 
@@ -74,6 +98,8 @@ public class SampleUsage {
 
         // Refresh token when needed
         JsonNode refreshedTokens = client.getAuth().refreshToken(tokenResponse.get("refresh_token").asText());
+        
+        // Extras
         System.out.println("New Access Token: " + refreshedTokens.get("access_token").asText());
     }
 
@@ -81,16 +107,26 @@ public class SampleUsage {
      * File upload example.
      */
     private static void fileUploadExample(EkaCareClient client, List<String> audioFiles, String txnId, String action, Map<String, Object> extraData, Map<String, Object> outputFormat) throws IOException {
+        // printed data
         System.out.println("=== File Upload Example ===");
-
-        // Upload files
-        List<JsonNode> responses = client.getV2RX().upload(audioFiles, txnId, action, extraData, outputFormat)
+        System.out.println("extraData" +  extraData.toString());
+        System.out.println("opformat" +  outputFormat.toString());
+        
+        // Main Code
+        JsonNode response = client.getV2RX().upload(audioFiles, txnId, action, extraData, outputFormat);
+        
+        // Output printed
+        System.out.println("Json Node: " + response.toPrettyString());
 
         // Print upload results
-        for (JsonNode response : responses) {
-            System.out.println("Uploaded: " + response.get("key").asText());
-            System.out.println("Content Type: " + response.get("contentType").asText());
-            System.out.println("File Size: " + response.get("size").asText() + " bytes");
+        for (JsonNode output : response.get("output")) {
+            System.out.println("template id: " + output.get("template_id"));
+            System.out.println("template name: " + output.get("name"));
+            System.out.println("status: " + output.get("status"));
+            System.out.println("errors: " + output.get("errors"));
+            System.out.println("warnings: " + output.get("warnings"));
+            System.out.println("Value: " + output.get("value"));
+
         }
     }
 
@@ -98,10 +134,13 @@ public class SampleUsage {
      * V2RX status example.
      */
     private static void getV2RxStatusExample(EkaCareClient client, String responseId, String action) throws IOException {
+        // Extras
         System.out.println("=== V2RX Fetcher Example ===");
 
         // Fetch session status
         JsonNode sessionStatus = client.getV2RX().getSessionStatus(responseId, action);
+        
+        // Extras
         System.out.println("Session Status: " + sessionStatus.toPrettyString());
     }
 
