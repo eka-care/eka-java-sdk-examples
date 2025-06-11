@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,25 +21,38 @@ public class SampleUsage {
     public static void main(String[] args) {
         try {
             // Initialize the client with client ID and secret
-            EkaCareClient client = new EkaCareClient("your_client_id", "your_client_secret");
+            EkaCareClient client = new EkaCareClient("EC_173754209749052", "53c5592a-9e86-4051-9c82-37d37253d339");
             List<String> audioFiles = new ArrayList<>();
-            audioFiles.add("file_path1");
-            audioFiles.add("file_path2");
-            String txnId = "transaction_id";
+            audioFiles.add("/Users/niharika/Downloads/1_tBA76778.wav");
+//            audioFiles.add("file_path2");
+            String txnId = "9dfd6340-8ec5-4b17-8803-5b7ac449cc6f";
             Map<String, Object> extraData = new HashMap<>();
             extraData.put("mode", "dictation");
-            String action = "ekascribe";
+            extraData.put("uhid", "txnId");
+            extraData.put("hfid", "audioFiles");
+            Map<String, Object> outputFormat = new HashMap<>();
+            outputFormat.put("input_language", Arrays.asList("en-IN"));
+
+            Map<String, Object> templateMap = new HashMap<>();
+            templateMap.put("template_id", "mw_template");
+            templateMap.put("codification_needed", true);
+
+            outputFormat.put("output_template", Arrays.asList(templateMap));
+
+            
+            String action = "ekascribe-v2";
+
 
             // Example 1: Authentication
              authenticationExample(client);
 
             // Example 2: Upload files
-             fileUploadExample(client, audioFiles, txnId, action, extraData);
+             fileUploadExample(client, audioFiles, txnId, action, extraData, outputFormat);
 
              // Below step should be done after the webhook is received
 
             // Example 3: Get V2RX status
-             getV2RxStatusExample(client, txnId);
+             getV2RxStatusExample(client, txnId, action);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -66,11 +80,11 @@ public class SampleUsage {
     /**
      * File upload example.
      */
-    private static void fileUploadExample(EkaCareClient client, List<String> audioFiles, String txnId, String action, Map<String, Object> extraData) throws IOException {
+    private static void fileUploadExample(EkaCareClient client, List<String> audioFiles, String txnId, String action, Map<String, Object> extraData, Map<String, Object> outputFormat) throws IOException {
         System.out.println("=== File Upload Example ===");
 
         // Upload files
-        List<JsonNode> responses = client.getFiles().upload(audioFiles, txnId, action, extraData);
+        List<JsonNode> responses = client.getV2RX().upload(audioFiles, txnId, action, extraData, outputFormat)
 
         // Print upload results
         for (JsonNode response : responses) {
@@ -83,11 +97,11 @@ public class SampleUsage {
     /**
      * V2RX status example.
      */
-    private static void getV2RxStatusExample(EkaCareClient client, String responseId) throws IOException {
+    private static void getV2RxStatusExample(EkaCareClient client, String responseId, String action) throws IOException {
         System.out.println("=== V2RX Fetcher Example ===");
 
         // Fetch session status
-        JsonNode sessionStatus = client.getV2RX().getSessionStatus(responseId);
+        JsonNode sessionStatus = client.getV2RX().getSessionStatus(responseId, action);
         System.out.println("Session Status: " + sessionStatus.toPrettyString());
     }
 
