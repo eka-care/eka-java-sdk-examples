@@ -21,7 +21,7 @@ public class SampleUsage {
     public static void main(String[] args) {
         try {
             // Initialize the client with client ID and secret
-            EkaCareClient client = new EkaCareClient("<client_id>", "<client-secret>");
+            EkaCareClient client = new EkaCareClient("<client_id", "client-secret");
             
             // Collect all audio files in a list
             List<String> audioFiles = new ArrayList<>();
@@ -47,7 +47,7 @@ public class SampleUsage {
 
             // output template ids
             Map<String, Object> templateMap1 = new HashMap<>();
-            templateMap1.put("template_id", "<your template id>");
+            templateMap1.put("template_id", "<your_template_id>");
             templateMap1.put("language_output", "en-IN");
             // set true if you need codified data (if out supports that)
             templateMap1.put("codification_needed", true);
@@ -55,7 +55,7 @@ public class SampleUsage {
             // Sample second template id
             Map<String, Object> templateMap2 = new HashMap<>();
             templateMap2.put("template_id", "clinical_notes_template");
-            templateMap2.put("language_output", "fr");
+            templateMap2.put("language_output", "en-IN");
             
             // Add both templates to the output_template list
             outputFormat.put("output_template", Arrays.asList(templateMap1, templateMap2));
@@ -118,15 +118,19 @@ public class SampleUsage {
         // Output printed
         System.out.println("Json Node: " + response.toPrettyString());
 
-        // Print upload results
-        for (JsonNode output : response.get("output")) {
-            System.out.println("template id: " + output.get("template_id"));
-            System.out.println("template name: " + output.get("name"));
-            System.out.println("status: " + output.get("status"));
-            System.out.println("errors: " + output.get("errors"));
-            System.out.println("warnings: " + output.get("warnings"));
-            System.out.println("Value: " + output.get("value"));
-
+        JsonNode outputNode = response.get("output");
+        if (outputNode != null && !outputNode.isNull()) {
+            for (JsonNode output : outputNode) {
+                System.out.println("template id: " + output.get("template_id"));
+                System.out.println("template name: " + output.get("name"));
+                System.out.println("status: " + output.get("status"));
+                System.out.println("errors: " + output.get("errors"));
+                System.out.println("warnings: " + output.get("warnings"));
+                System.out.println("Value: " + output.get("value"));
+            }
+        } else {
+            System.out.println("No output field found in the response or it's null.");
+            System.out.println("Please check the API response structure.");
         }
     }
 
